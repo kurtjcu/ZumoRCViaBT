@@ -15,8 +15,11 @@
 
 #define MAX_SPEED          400 // max motor speed
 #define JOYSTICK_DEADBAND   10 // compensate for control centering offset
-#define JOYSTICK_RANGE     512 // difference from 512 (center position of joystick to be treated as full scale input (for example, a value of 512 means
+#define JOYSTICK_STEERING_RANGE     512 // make larger than 512 to make steering LESS sensitive
+#define JOYSTICK_THROTTLE_RANGE     512 // pulse width difference from 512 us to be treated as full scale input (for example, a value of 512 means
                                //   any value <= 0 or >= 1023 is considered full scale)
+
+#define STEERING_SENSITIVITY 2.5  //what do i divide the steering by?
 String inputString = "";
 char str[255];
 
@@ -55,18 +58,18 @@ void loop() {
     // RC signals encode information centered on 512 (analog in midpoint 1 - 1023); subtract 512 to get a value centered on 0
     // this conversion get us ready to use +- values for ZumoMotors
     int throttleForCalc = throttle - 512;
-    int steeringForCalc = steering - 512;
+    int steeringForCalc = (steering - 512) / STEERING_SENSITIVITY;
 
     // apply deadband, deadband is giving us a little play with the center (home) position of the joystick.
     // cheap joysticks rarely sit EXACTLY on the midpoint, this code stops the robot crawling away when joystick is at rest.
     if (abs(throttleForCalc) <= JOYSTICK_DEADBAND)
       throttleForCalc = 0;
-    if (abs(steeringForCalc) <= JOYSTICK_DEADBAND)
+    if (abs(steeringForCalc) <= JOYSTICK_DEADBAND / STEERING_SENSITIVITY)
       steeringForCalc = 0;
 
     // mix throttle and steering inputs to obtain left & right motor speeds
-    left_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_RANGE) - ((long)steeringForCalc * MAX_SPEED / JOYSTICK_RANGE);
-    right_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_RANGE) + ((long)steeringForCalc * MAX_SPEED / JOYSTICK_RANGE);
+    left_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_THROTTLE_RANGE) + ((long)steeringForCalc * MAX_SPEED / JOYSTICK_STEERING_RANGE);
+    right_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_THROTTLE_RANGE) - ((long)steeringForCalc * MAX_SPEED / JOYSTICK_STEERING_RANGE);
 
     // cap speeds to max
     left_speed = min(max(left_speed, -MAX_SPEED), MAX_SPEED);
@@ -77,18 +80,22 @@ void loop() {
   // Send the motor speeds to the motors.
   ZumoMotors::setSpeeds(left_speed, right_speed);
   
-  /* Debugging to serial port, uncomment if testing communications link from joystick without connecting a zumo.
-  Serial.print("left: ");
-  Serial.println(left_speed);
-  Serial.print("Right: ");
-  Serial.println(right_speed);
+ /*     //uncomment to debug
+ Serial.print("Throttle: "); 
+ Serial.println(throttle); 
+ Serial.print("Steering: "); 
+ Serial.println(steering); 
+ Serial.print("Left Speed: "); 
+ Serial.println(left_speed);
+ Serial.print("Right Speed: "); 
+ Serial.println(right_speed);
   */
   
   /* This file was designed to use the HC-05 bluetooth module https://nqmakersupplies.com.au/shop/product/hc-05-bluetooth-rx-or-tx-142 
    * The BT modules have to be paired VIA AT commands to work in this sketch. This sketch will also function using zigbee or any other transparent wireless link.
    * For testing you can try connecting the RX/TX from each arduino without your radio links, this can help you rile out any radio configuration issues.
-   */
+ */
+ 
 
-  
-  
+
 }
