@@ -14,6 +14,7 @@
 #define LED_PIN       13 // user LED pin
 
 #define MAX_SPEED          400 // max motor speed
+#define SPEED_DIVISOR      .666 //
 #define JOYSTICK_DEADBAND   10 // compensate for control centering offset
 #define JOYSTICK_STEERING_RANGE     512 // make larger than 512 to make steering LESS sensitive
 #define JOYSTICK_THROTTLE_RANGE     512 // pulse width difference from 512 us to be treated as full scale input (for example, a value of 512 means
@@ -68,13 +69,19 @@ void loop() {
       steeringForCalc = 0;
 
     // mix throttle and steering inputs to obtain left & right motor speeds
-    left_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_THROTTLE_RANGE) + ((long)steeringForCalc * MAX_SPEED / JOYSTICK_STEERING_RANGE);
+    left_speed  = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_THROTTLE_RANGE) + ((long)steeringForCalc * MAX_SPEED / JOYSTICK_STEERING_RANGE);
     right_speed = ((long)throttleForCalc * MAX_SPEED / JOYSTICK_THROTTLE_RANGE) - ((long)steeringForCalc * MAX_SPEED / JOYSTICK_STEERING_RANGE);
 
     // cap speeds to max
     left_speed = min(max(left_speed, -MAX_SPEED), MAX_SPEED);
     right_speed = min(max(right_speed, -MAX_SPEED), MAX_SPEED);
+
+    //left_speed  = (int)(((float) left_speed) * SPEED_DIVISOR);
+    //right_speed = (int)(((float) right_speed) * SPEED_DIVISOR);
     
+    left_speed  = (float)left_speed * SPEED_DIVISOR;
+    right_speed = (float)right_speed * SPEED_DIVISOR;
+  
   }
   
   // Send the motor speeds to the motors.
